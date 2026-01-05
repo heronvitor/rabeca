@@ -1,6 +1,5 @@
 /**
- * VIOLINO & RABECA INTERATIVA - SCRIPT COMPLETO (VERSÃO GLOBAL)
- * Funcionalidades: Mapeamento de Diades (Todas as notas), Troca de Afinação, 4/5 Cordas e Afinador Visual
+ * VIOLINO & RABECA INTERATIVA - VERSÃO CROMÁTICA COMPLETA
  */
 
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -31,9 +30,6 @@ let isListening = false;
 let smoothedFreq = 0;
 const smoothingFactor = 0.15;
 
-/**
- * 1. LÓGICA DO DIAGRAMA (ATUALIZADA PARA MOSTRAR TODAS AS NOTAS)
- */
 function updateDiagram() {
     const count = parseInt(document.getElementById('stringCount').value);
     const tuningKey = document.getElementById('tuningSelect').value;
@@ -58,6 +54,7 @@ function updateDiagram() {
     fingerboard.setAttribute("width", boardWidth);
     nut.setAttribute("x2", 25 + boardWidth);
 
+    // Linhas de posição (Trastes)
     Object.values(POSITIONS).forEach(y => {
         if (y === 20) return;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -73,7 +70,7 @@ function updateDiagram() {
     currentTuning.forEach((conf, i) => {
         const x = X_COORDS[i];
         
-        // Desenha a corda
+        // Desenha Corda
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", x); line.setAttribute("y1", 20);
         line.setAttribute("x2", x); line.setAttribute("y2", 540);
@@ -81,24 +78,21 @@ function updateDiagram() {
         line.setAttribute("stroke-width", STRING_WIDTHS[i]);
         stringsLayer.appendChild(line);
 
-        // Rótulo da corda
+        // Nome da Corda
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", x); txt.setAttribute("y", 10);
         txt.setAttribute("class", "string-label");
         txt.textContent = conf.name;
         labelsLayer.appendChild(txt);
 
-        // NOVA LÓGICA: Varre cada posição da corda em busca de RAIZ ou INTERVALO
+        // Busca de notas
         for (let s = 0; s <= 7; s++) {
             let noteIdx = (conf.rootIndex + s) % 12;
             let currentNoteName = CHROMATIC_SCALE[noteIdx];
 
-            // Se for a nota Raiz, desenha o marcador verde
             if (currentNoteName === rootNote) {
                 drawMarker(x, POSITIONS[s], rootNote, 'marker-root');
-            } 
-            // Se for a nota do Intervalo, desenha o marcador amarelo
-            else if (currentNoteName === intervalNote) {
+            } else if (currentNoteName === intervalNote) {
                 drawMarker(x, POSITIONS[s], intervalNote, 'marker-interval');
             }
         }
@@ -121,9 +115,8 @@ function drawMarker(x, y, label, className) {
     layer.appendChild(g);
 }
 
-/**
- * 2. LÓGICA DE ÁUDIO (MANTIDA)
- */
+// --- Funções de Áudio (Afinador Visual) ---
+
 async function toggleMic() {
     const btn = document.getElementById('micBtn');
     if (!isListening) {
@@ -139,7 +132,7 @@ async function toggleMic() {
             btn.style.background = "#27ae60";
             drawLiveMarker(); 
         } catch (err) {
-            alert("Não foi possível acessar o microfone.");
+            alert("Acesso ao microfone negado.");
         }
     } else {
         if(stream) stream.getTracks().forEach(t => t.stop());
