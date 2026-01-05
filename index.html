@@ -1,24 +1,106 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Rabeca Pro: Intervalos e Acordes</title>
     <style>
-        /* Estilos básicos mantidos e novos adicionados */
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .controls { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-        select, button { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
-        
-        #legend { background: white; padding: 15px; border-radius: 8px; display: flex; gap: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #555; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
 
-        .fret-line { stroke: rgba(255,255,255,0.2); stroke-width: 1; }
-        .label-note { font-family: Arial; font-size: 10px; font-weight: bold; fill: white; text-anchor: middle; pointer-events: none; }
-        .string-label { font-family: Arial; font-size: 12px; font-weight: bold; fill: #7f8c8d; text-anchor: middle; }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        select,
+        button {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        #legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid #555;
+        }
+
+        .fret-line {
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 1;
+        }
+
+        .label-note {
+            font-family: Arial;
+            font-size: 10px;
+            font-weight: bold;
+            fill: white;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .string-label {
+            font-family: Arial;
+            font-size: 12px;
+            font-weight: bold;
+            fill: #7f8c8d;
+            text-anchor: middle;
+        }
+
+        .observation {
+            background-color: #fff3cd;
+            /* Amarelo claro para atenção */
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 5px solid #ffeeba;
+            margin: 10px 0 20px 0;
+            max-width: 600px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
+
 <body>
 
     <h2>Calculador de Intervalos e Acordes</h2>
@@ -43,12 +125,18 @@
         <div class="control-group">
             <label>Nota Base (Tônica):</label>
             <select id="rootNote">
-                <option value="C">C</option><option value="C#">C#</option>
-                <option value="D">D</option><option value="D#">D#</option>
-                <option value="E">E</option><option value="F">F</option>
-                <option value="F#">F#</option><option value="G" selected>G</option>
-                <option value="G#">G#</option><option value="A">A</option>
-                <option value="A#">A#</option><option value="B">B</option>
+                <option value="C">C</option>
+                <option value="C#">C#</option>
+                <option value="D">D</option>
+                <option value="D#">D#</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="F#">F#</option>
+                <option value="G" selected>G</option>
+                <option value="G#">G#</option>
+                <option value="A">A</option>
+                <option value="A#">A#</option>
+                <option value="B">B</option>
             </select>
         </div>
 
@@ -63,7 +151,7 @@
         <div class="control-group">
             <label>Tipo:</label>
             <select id="typeSelect">
-                </select>
+            </select>
         </div>
 
         <div class="control-group" style="justify-content: flex-end;">
@@ -78,7 +166,7 @@
             <g transform="translate(30, 40)">
                 <rect id="fingerboard" x="25" y="20" width="150" height="520" fill="#1e272e" rx="4" />
                 <g id="frets-layer"></g>
-                <line id="nut" x1="25" y1="20" x2="175" y2="20" stroke="#000" stroke-width="8"/>
+                <line id="nut" x1="25" y1="20" x2="175" y2="20" stroke="#000" stroke-width="8" />
                 <g id="strings-layer"></g>
                 <g id="labels-layer"></g>
                 <g id="markers-layer"></g>
@@ -88,7 +176,9 @@
 
     <script src="script.js"></script>
     <div class="observation">
-    <strong>💡 Dica de Uso:</strong> Para uma detecção precisa do afinador, toque <strong>apenas uma nota por vez</strong>. O sistema identifica apenas a nota fundamental.
-</div>
+        <strong>💡 Dica de Uso:</strong> Para uma detecção precisa do afinador, toque <strong>apenas uma nota por
+            vez</strong>. O sistema identifica apenas a nota fundamental.
+    </div>
 </body>
+
 </html>
