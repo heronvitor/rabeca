@@ -233,31 +233,77 @@ function autoCorrelate(buffer, sampleRate) {
 function drawLiveMarker(freq) {
     const tuningKey = document.getElementById('tuningSelect').value;
     const count = parseInt(document.getElementById('stringCount').value);
-    const currentTuning = TUNINGS[tuningKey].slice(0, count);
+    const tuning = TUNINGS[tuningKey].slice(0, count);
     
-    let bestStr = -1, bestY = -1;
+    let bestStr = -1, bestY = -1, nearestNoteName = "";
 
-    currentTuning.forEach((st, i) => {
+    tuning.forEach((st, i) => {
+        // Calcula quantos semitons acima da corda solta (valor decimal, ex: 3.45)
         const semi = 12 * Math.log2(freq / st.f);
+        
+        // Verifica se está dentro da área desenhável do braço
         if (semi >= -0.5 && semi <= 7.5) {
             bestStr = i;
+            
+            // Cálculo da posição Y suave (interpolação)
             const base = Math.floor(semi), frac = semi - base;
-            const y1 = POSITIONS[Math.max(0, base)], y2 = POSITIONS[Math.min(7, base + 1)];
-            bestY = y1 + (y2 - y1) * frac;
+            const y1 = POSITIONS[Math.max(0,base)], y2 = POSITIONS[Math.min(7,base+1)];
+            bestY = y1 + (y2-y1)*frac;
+
+            // NOVO: Cálculo da nota mais próxima (arredondamento)
+            // Arredonda o semitom decimal para o inteiro mais próximo
+            const closestSemiIndex = Math.round(semi);
+            // Calcula o índice na escala cromática
+            const chromaticIdx = (st.idx + closestSemiIndex) % 12;
+            // Garante que o índice seja positivo (para segurança) e pega o nome
+            nearestNoteName = CHROMATIC_SCALE[(chromaticIdx + 12) % 12];
         }
     });
 
-    let live = document.getElementById('live-marker');
+    // Referência ao GRUPO do marcador vivo, não apenas ao círculo
+    let liveGroup = document.getElementById('live-marker-group');
+
     if (bestStr !== -1 && bestY !== -1) {
-        if (!live) {
-            live = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            live.id = 'live-marker'; live.setAttribute("r", "15");
-            live.setAttribute("fill", "none"); live.setAttribute("stroke", "cyan");
-            live.setAttribute("stroke-width", "3"); live.setAttribute("stroke-dasharray", "4");
-            document.getElementById('markers-layer').appendChild(live);
+        const xPos = X_COORDS[bestStr];
+
+        // Se o grupo ainda não existe, cria a estrutura completa (Grupo > Círculo + Texto)
+        if(!liveGroup) {
+            liveGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            liveGroup.id = 'live-marker-group';
+
+            // Círculo
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.id = 'live-marker-circle'; // ID específico para o círculo
+            circle.setAttribute("r", "15");
+            circle.setAttribute("fill", "none"); 
+            circle.setAttribute("stroke", "cyan");
+            circle.setAttribute("stroke-width", "3"); 
+            circle.setAttribute("stroke-dasharray", "4");
+            
+            // Texto
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.id = 'live-marker-text'; // ID específico para o texto
+            text.setAttribute("class", "live-note-label");
+
+            liveGroup.appendChild(circle);
+            liveGroup.appendChild(text);
+            document.getElementById('markers-layer').appendChild(liveGroup);
         }
-        live.setAttribute("cx", X_COORDS[bestStr]); live.setAttribute("cy", bestY);
-    } else if (live) {
-        live.remove();
+        
+        // Atualiza as posições e o texto dos elementos existentes
+        const circle = document.getElementById('live-marker-circle');
+        const text = document.getElementById('live-marker-text');
+
+        circle.setAttribute("cx", xPos); 
+        circle.setAttribute("cy", bestY);
+
+        // Como usamos 'dominant-baseline: central' no CSS, o Y é o centro exato
+        text.setAttribute("x", xPos); 
+        text.setAttribute("y", bestY); 
+        text.textContent = nearestNoteName;
+
+    } else if (liveGroup) {
+        // Remove o grupo inteiro se não houver frequência válida
+        liveGroup.remove();
     }
 }
