@@ -1,30 +1,38 @@
 /**
- * Lógica de Mapeamento de Notas e Intervalos para Violino/Rabeca
+ * VIOLINO & RABECA INTERATIVA - SCRIPT COMPLETO (VERSÃO GLOBAL)
+ * Funcionalidades: Mapeamento de Diades (Todas as notas), Troca de Afinação, 4/5 Cordas e Afinador Visual
  */
 
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// Configurações de Afinação
 const TUNINGS = {
     standard: [
-        { name: 'C', rootIndex: 0 }, { name: 'G', rootIndex: 7 },
-        { name: 'D', rootIndex: 2 }, { name: 'A', rootIndex: 9 }, { name: 'E', rootIndex: 4 }
+        { name: 'C', rootIndex: 0, freq: 130.81 }, 
+        { name: 'G', rootIndex: 7, freq: 196.00 },
+        { name: 'D', rootIndex: 2, freq: 293.66 }, 
+        { name: 'A', rootIndex: 9, freq: 440.00 }, 
+        { name: 'E', rootIndex: 4, freq: 659.25 }
     ],
     cavalo: [
-        { name: 'D', rootIndex: 2 }, { name: 'A', rootIndex: 9 },
-        { name: 'E', rootIndex: 4 }, { name: 'B', rootIndex: 11 }, { name: 'F#', rootIndex: 6 }
+        { name: 'D', rootIndex: 2, freq: 146.83 }, 
+        { name: 'A', rootIndex: 9, freq: 220.00 },
+        { name: 'E', rootIndex: 4, freq: 329.63 }, 
+        { name: 'B', rootIndex: 11, freq: 493.88 }, 
+        { name: 'F#', rootIndex: 6, freq: 739.99 }
     ]
 };
 
-// Coordenadas Y (Posições dos dedos/semitons)
 const POSITIONS = { 0: 20, 1: 65, 2: 110, 3: 155, 4: 200, 5: 255, 6: 305, 7: 355 };
-
-// Coordenadas X das cordas e espessuras
 const X_COORDS = [40, 70, 100, 130, 160];
 const STRING_WIDTHS = [4.5, 3.5, 2.5, 1.8, 1.0];
 
+let audioCtx, analyser, source, stream;
+let isListening = false;
+let smoothedFreq = 0;
+const smoothingFactor = 0.15;
+
 /**
- * Atualiza todo o diagrama baseado nos seletores
+ * 1. LÓGICA DO DIAGRAMA (ATUALIZADA PARA MOSTRAR TODAS AS NOTAS)
  */
 function updateDiagram() {
     const count = parseInt(document.getElementById('stringCount').value);
@@ -32,10 +40,8 @@ function updateDiagram() {
     const rootNote = document.getElementById('rootNote').value;
     const intervalStep = parseInt(document.getElementById('intervalType').value);
     
-    // Filtra as cordas baseada na quantidade selecionada (omite as mais agudas se 4)
     const currentTuning = TUNINGS[tuningKey].slice(0, count);
 
-    // Referências aos elementos do SVG
     const markersLayer = document.getElementById('markers-layer');
     const stringsLayer = document.getElementById('strings-layer');
     const labelsLayer = document.getElementById('labels-layer');
@@ -43,20 +49,17 @@ function updateDiagram() {
     const fingerboard = document.getElementById('fingerboard');
     const nut = document.getElementById('nut');
     
-    // Limpeza das camadas
     markersLayer.innerHTML = '';
     stringsLayer.innerHTML = '';
     labelsLayer.innerHTML = '';
     fretLayer.innerHTML = '';
 
-    // Ajuste dinâmico da largura do braço
     const boardWidth = (count === 4) ? 120 : 150;
     fingerboard.setAttribute("width", boardWidth);
     nut.setAttribute("x2", 25 + boardWidth);
 
-    // Desenha as linhas de posição (trastes falsos)
     Object.values(POSITIONS).forEach(y => {
-        if (y === 20) return; // Pula a pestana
+        if (y === 20) return;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", "25"); line.setAttribute("y1", y);
         line.setAttribute("x2", 25 + boardWidth); line.setAttribute("y2", y);
@@ -67,11 +70,10 @@ function updateDiagram() {
     const rootIdx = CHROMATIC_SCALE.indexOf(rootNote);
     const intervalNote = CHROMATIC_SCALE[(rootIdx + intervalStep) % 12];
 
-    // Renderiza cada corda e suas notas correspondentes
     currentTuning.forEach((conf, i) => {
         const x = X_COORDS[i];
         
-        // 1. Desenha a linha da corda
+        // Desenha a corda
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", x); line.setAttribute("y1", 20);
         line.setAttribute("x2", x); line.setAttribute("y2", 540);
@@ -79,43 +81,33 @@ function updateDiagram() {
         line.setAttribute("stroke-width", STRING_WIDTHS[i]);
         stringsLayer.appendChild(line);
 
-        // 2. Desenha o rótulo da corda (C, G, D, etc)
+        // Rótulo da corda
         const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
         txt.setAttribute("x", x); txt.setAttribute("y", 10);
         txt.setAttribute("class", "string-label");
         txt.textContent = conf.name;
         labelsLayer.appendChild(txt);
 
-        // 3. Verifica presença das notas da diade nesta corda
+        // NOVA LÓGICA: Varre cada posição da corda em busca de RAIZ ou INTERVALO
         for (let s = 0; s <= 7; s++) {
             let noteIdx = (conf.rootIndex + s) % 12;
-            let noteName = CHROMATIC_SCALE[noteIdx];
+            let currentNoteName = CHROMATIC_SCALE[noteIdx];
 
-            if (noteName === rootNote) {
+            // Se for a nota Raiz, desenha o marcador verde
+            if (currentNoteName === rootNote) {
                 drawMarker(x, POSITIONS[s], rootNote, 'marker-root');
-                
-                // Tenta achar o intervalo na corda adjacente à direita
-                if (i < currentTuning.length - 1) {
-                    const nextConf = currentTuning[i+1];
-                    for (let ns = 0; ns <= 7; ns++) {
-                        let nextNoteIdx = (nextConf.rootIndex + ns) % 12;
-                        if (CHROMATIC_SCALE[nextNoteIdx] === intervalNote) {
-                            drawMarker(X_COORDS[i+1], POSITIONS[ns], intervalNote, 'marker-interval');
-                        }
-                    }
-                }
+            } 
+            // Se for a nota do Intervalo, desenha o marcador amarelo
+            else if (currentNoteName === intervalNote) {
+                drawMarker(x, POSITIONS[s], intervalNote, 'marker-interval');
             }
         }
     });
 }
 
-/**
- * Cria um marcador visual no SVG
- */
 function drawMarker(x, y, label, className) {
     const layer = document.getElementById('markers-layer');
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", x); circle.setAttribute("cy", y);
     circle.setAttribute("r", "12"); circle.setAttribute("class", className);
@@ -129,10 +121,114 @@ function drawMarker(x, y, label, className) {
     layer.appendChild(g);
 }
 
-// Inicialização e Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('select').forEach(s => {
-        s.addEventListener('change', updateDiagram);
+/**
+ * 2. LÓGICA DE ÁUDIO (MANTIDA)
+ */
+async function toggleMic() {
+    const btn = document.getElementById('micBtn');
+    if (!isListening) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            isListening = true;
+            btn.textContent = "Parar Escuta";
+            btn.style.background = "#27ae60";
+            drawLiveMarker(); 
+        } catch (err) {
+            alert("Não foi possível acessar o microfone.");
+        }
+    } else {
+        if(stream) stream.getTracks().forEach(t => t.stop());
+        isListening = false;
+        btn.textContent = "Ativar Escuta";
+        btn.style.background = "#e74c3c";
+        const old = document.getElementById('live-marker-g');
+        if (old) old.remove();
+    }
+}
+
+function autoCorrelate(buffer, sampleRate) {
+    let SIZE = buffer.length;
+    let rms = 0;
+    for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
+    rms = Math.sqrt(rms / SIZE);
+    if (rms < 0.01) return -1;
+
+    let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+    for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+    
+    let buf = buffer.slice(r1, r2);
+    SIZE = buf.length;
+    let c = new Array(SIZE).fill(0);
+    for (let i = 0; i < SIZE; i++)
+        for (let j = 0; j < SIZE - i; j++) c[i] = c[i] + buf[j] * buf[j + i];
+
+    let d = 0; while (c[d] > c[d + 1]) d++;
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < SIZE; i++) {
+        if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+    }
+    return sampleRate / maxpos;
+}
+
+function drawLiveMarker() {
+    if (!isListening) return;
+    const buffer = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buffer);
+    const freq = autoCorrelate(buffer, audioCtx.sampleRate);
+
+    if (freq !== -1 && freq < 1000) {
+        smoothedFreq = (smoothingFactor * freq) + (1 - smoothingFactor) * smoothedFreq;
+        updateLiveVisuals(smoothedFreq);
+    }
+    requestAnimationFrame(drawLiveMarker);
+}
+
+function updateLiveVisuals(freq) {
+    const tuningKey = document.getElementById('tuningSelect').value;
+    const count = parseInt(document.getElementById('stringCount').value);
+    const currentTuning = TUNINGS[tuningKey].slice(0, count);
+    
+    let bestStringIdx = -1;
+    let bestY = -1;
+
+    currentTuning.forEach((string, i) => {
+        const semitonesAbove = 12 * Math.log2(freq / string.freq);
+        if (semitonesAbove >= -0.5 && semitonesAbove <= 7.5) {
+            bestStringIdx = i;
+            const base = Math.floor(semitonesAbove);
+            const frac = semitonesAbove - base;
+            const yStart = POSITIONS[Math.max(0, Math.min(7, base))];
+            const yEnd = POSITIONS[Math.max(0, Math.min(7, base + 1))];
+            bestY = yStart + (yEnd - yStart) * frac;
+        }
     });
+
+    const layer = document.getElementById('markers-layer');
+    let liveG = document.getElementById('live-marker-g');
+
+    if (bestStringIdx !== -1 && bestY !== -1) {
+        if (!liveG) {
+            liveG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            liveG.id = 'live-marker-g';
+            liveG.innerHTML = `<circle id="live-circle" r="14" fill="none" stroke="#e74c3c" stroke-width="3" stroke-dasharray="4"/>`;
+            layer.appendChild(liveG);
+        }
+        const circle = document.getElementById('live-circle');
+        circle.setAttribute("cx", X_COORDS[bestStringIdx]);
+        circle.setAttribute("cy", bestY);
+    } else if (liveG) {
+        liveG.remove();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     updateDiagram();
+    document.querySelectorAll('select').forEach(s => s.addEventListener('change', updateDiagram));
+    document.getElementById('micBtn').addEventListener('click', toggleMic);
 });
