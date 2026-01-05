@@ -35,10 +35,10 @@ const MODES_DATA = {
         { name: "Oitava", steps: [0, 12] }
     ],
     chord: [
-        { name: "Maior (T 3 5)", steps: [0, 4, 7] },
-        { name: "Menor (T b3 5)", steps: [0, 3, 7] },
-        { name: "Aumentado (T 3 #5)", steps: [0, 4, 8] },
-        { name: "Diminuto (T b3 b5)", steps: [0, 3, 6] },
+        { name: "Maior (M)", steps: [0, 4, 7] },
+        { name: "Menor (m)", steps: [0, 3, 7] },
+        { name: "Aumentado (aug)", steps: [0, 4, 8] },
+        { name: "Diminuto (dim)", steps: [0, 3, 6] },
         { name: "Sétima Dominante (7)", steps: [0, 4, 7, 10] },
         { name: "Sétima Maior (7M)", steps: [0, 4, 7, 11] },
         { name: "Menor com 7ª (m7)", steps: [0, 3, 7, 10] }
