@@ -1,25 +1,26 @@
 /**
- * VIOLINO & RABECA INTERATIVA - VERSÃO COM PERSISTÊNCIA
+ * VIOLINO & RABECA INTERATIVA - COM ESCALAS NORDESTINAS
  */
 
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const COLOR_MAP = {
-    0: { color: '#27ae60', label: 'Tônica (T)' },
-    1: { color: '#e67e22', label: '2ª Menor' },
-    2: { color: '#e67e22', label: '2ª Maior' },
-    3: { color: '#3498db', label: '3ª Menor' },
-    4: { color: '#3498db', label: '3ª Maior' },
-    5: { color: '#9b59b6', label: '4ª Justa' },
+    0: { color: '#27ae60', label: 'Tônica (1)' },
+    1: { color: '#e67e22', label: '2ª menor' },
+    2: { color: '#e74c3c', label: '2ª maior' },
+    3: { color: '#3498db', label: '3ª menor' },
+    4: { color: '#3498db', label: '3ª maior' },
+    5: { color: '#9b59b6', label: '4ª justa' },
     6: { color: '#95a5a6', label: 'Tritono' },
-    7: { color: '#f1c40f', label: '5ª Justa' },
-    8: { color: '#d35400', label: '6ª Menor' },
-    9: { color: '#d35400', label: '6ª Maior' },
-    10: { color: '#e74c3c', label: '7ª Menor' },
-    11: { color: '#e74c3c', label: '7ª Maior' },
+    7: { color: '#f1c40f', label: '5ª justa' },
+    8: { color: '#d35400', label: '6ª menor' },
+    9: { color: '#d35400', label: '6ª maior' },
+    10: { color: '#e74c3c', label: '7ª menor' },
+    11: { color: '#e74c3c', label: '7ª maior' },
     12: { color: '#2ecc71', label: 'Oitava' }
 };
 
+// NOVO: Agora com modo "scale" e escalas nordestinas
 const MODES_DATA = {
     interval: [
         { name: "2ª Menor", steps: [0, 1] },
@@ -41,6 +42,13 @@ const MODES_DATA = {
         { name: "Sétima Dominante (7)", steps: [0, 4, 7, 10] },
         { name: "Sétima Maior (7M)", steps: [0, 4, 7, 11] },
         { name: "Menor com 7ª (m7)", steps: [0, 3, 7, 10] }
+    ],
+    scale: [
+        { name: "Maior (Iônica)", steps: [0, 2, 4, 5, 7, 9, 11] },
+        { name: "Menor Natural (Eólica)", steps: [0, 2, 3, 5, 7, 8, 10] },
+        { name: "Baiana", steps: [0, 2, 3, 5, 7, 9, 10] },         // Dórico com 6ª maior
+        { name: "Caboclinha", steps: [0, 2, 3, 4, 5, 7, 8, 10] }, // Tem a blue note (4# ou 5b)
+        { name: "Meia-Entrada", steps: [0, 2, 4, 5, 7, 8, 10] }  // Muito usada no forró
     ]
 };
 
@@ -54,7 +62,7 @@ const X_COORDS = [40, 70, 100, 130, 160];
 
 let audioCtx, analyser, isListening = false, smoothedFreq = 0;
 
-// === FUNÇÕES DE PERSISTÊNCIA ===
+// === PERSISTÊNCIA (mantida) ===
 function saveSettings() {
     const settings = {
         stringCount: document.getElementById('stringCount').value,
@@ -72,25 +80,21 @@ function loadSettings() {
 
     try {
         const settings = JSON.parse(saved);
-
         document.getElementById('stringCount').value = settings.stringCount || '4';
         document.getElementById('tuningSelect').value = settings.tuningSelect || 'cavalo';
         document.getElementById('rootNote').value = settings.rootNote || 'G';
         document.getElementById('analysisMode').value = settings.analysisMode || 'interval';
-        // typeSelect será atualizado depois de popular as opções
         if (settings.typeSelect) {
-            // Vamos guardar temporariamente para aplicar depois
             window.tempTypeSelect = settings.typeSelect;
         }
         return true;
     } catch (e) {
-        console.warn("Erro ao carregar configurações salvas:", e);
+        console.warn("Erro ao carregar configurações:", e);
         return false;
     }
 }
 
-// === RESTANTE DO CÓDIGO (igual ao original, com pequenas adaptações) ===
-
+// === FUNÇÕES PRINCIPAIS ===
 function updateTypeOptions() {
     const mode = document.getElementById('analysisMode').value;
     const typeSelect = document.getElementById('typeSelect');
@@ -103,7 +107,6 @@ function updateTypeOptions() {
         typeSelect.appendChild(opt);
     });
 
-    // Aplicar valor salvo do typeSelect, se existir
     if (window.tempTypeSelect !== undefined) {
         typeSelect.value = window.tempTypeSelect;
         delete window.tempTypeSelect;
@@ -117,7 +120,7 @@ function updateDiagram() {
     const tuningKey = document.getElementById('tuningSelect').value;
     const rootNote = document.getElementById('rootNote').value;
     const mode = document.getElementById('analysisMode').value;
-    const typeIdx = document.getElementById('typeSelect').value;
+    const typeIdx = parseInt(document.getElementById('typeSelect').value);
     
     const selectedData = MODES_DATA[mode][typeIdx] || MODES_DATA[mode][0];
     const currentTuning = TUNINGS[tuningKey].slice(0, count);
@@ -125,10 +128,11 @@ function updateDiagram() {
 
     const targetNotes = selectedData.steps.map(step => ({
         name: CHROMATIC_SCALE[(rootIdx + step) % 12],
-        color: COLOR_MAP[step].color,
-        label: COLOR_MAP[step].label
+        color: COLOR_MAP[step % 12].color,  // Usa o passo módulo 12 para cor correta
+        label: COLOR_MAP[step % 12].label
     }));
 
+    // Limpa camadas
     document.getElementById('markers-layer').innerHTML = '';
     document.getElementById('strings-layer').innerHTML = '';
     document.getElementById('labels-layer').innerHTML = '';
@@ -139,16 +143,17 @@ function updateDiagram() {
     document.getElementById('fingerboard').setAttribute("width", boardWidth);
     document.getElementById('nut').setAttribute("x2", 25 + boardWidth);
 
+    // Trastes
     Object.values(POSITIONS).forEach(y => {
         if (y === 20) return;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", 25); line.setAttribute("y1", y);
         line.setAttribute("x2", 25 + boardWidth); line.setAttribute("y2", y);
-        line.setAttribute("class", "fret-line");
         line.setAttribute("stroke", "rgba(255,255,255,0.2)");
         document.getElementById('frets-layer').appendChild(line);
     });
 
+    // Cordas e marcadores
     currentTuning.forEach((conf, i) => {
         const x = X_COORDS[i];
         
@@ -171,11 +176,8 @@ function updateDiagram() {
         }
     });
 
-    // Salvar sempre que o diagrama for atualizado
     saveSettings();
 }
-
-// ... (funções updateLegend, drawMarker permanecem iguais)
 
 function updateLegend(targets) {
     const container = document.getElementById('legend');
@@ -207,31 +209,26 @@ function drawMarker(x, y, label, color) {
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
-    // Carregar configurações salvas (se houver)
     loadSettings();
 
-    // Listeners
     const analysisMode = document.getElementById('analysisMode');
     analysisMode.addEventListener('change', () => {
         updateTypeOptions();
         saveSettings();
     });
 
-    // Todos os outros selects atualizam o diagrama e salvam
     ['stringCount', 'tuningSelect', 'rootNote', 'typeSelect'].forEach(id => {
         document.getElementById(id).addEventListener('change', () => {
             updateDiagram();
-            // saveSettings() já é chamado dentro de updateDiagram()
         });
     });
 
     document.getElementById('micBtn').addEventListener('click', toggleMic);
 
-    // Inicializa opções e diagrama (respeitando valores carregados)
     updateTypeOptions();
 });
 
-// === LÓGICA DO MICROFONE (inalterada) ===
+// === LÓGICA DO MICROFONE ===
 async function toggleMic() {
     const btn = document.getElementById('micBtn');
     if (!isListening) {
