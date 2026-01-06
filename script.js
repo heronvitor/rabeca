@@ -1,5 +1,5 @@
 /**
- * VIOLINO & RABECA INTERATIVA - VERSÃO CORRIGIDA
+ * VIOLINO & RABECA INTERATIVA - VERSÃO COM PERSISTÊNCIA
  */
 
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -20,7 +20,6 @@ const COLOR_MAP = {
     12: { color: '#2ecc71', label: 'Oitava' }
 };
 
-// MODIFICADO: Agora os intervalos incluem o passo [0] para mostrar a tônica
 const MODES_DATA = {
     interval: [
         { name: "2ª Menor", steps: [0, 1] },
@@ -55,6 +54,43 @@ const X_COORDS = [40, 70, 100, 130, 160];
 
 let audioCtx, analyser, isListening = false, smoothedFreq = 0;
 
+// === FUNÇÕES DE PERSISTÊNCIA ===
+function saveSettings() {
+    const settings = {
+        stringCount: document.getElementById('stringCount').value,
+        tuningSelect: document.getElementById('tuningSelect').value,
+        rootNote: document.getElementById('rootNote').value,
+        analysisMode: document.getElementById('analysisMode').value,
+        typeSelect: document.getElementById('typeSelect').value
+    };
+    localStorage.setItem('violinAppSettings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+    const saved = localStorage.getItem('violinAppSettings');
+    if (!saved) return false;
+
+    try {
+        const settings = JSON.parse(saved);
+
+        document.getElementById('stringCount').value = settings.stringCount || '4';
+        document.getElementById('tuningSelect').value = settings.tuningSelect || 'cavalo';
+        document.getElementById('rootNote').value = settings.rootNote || 'G';
+        document.getElementById('analysisMode').value = settings.analysisMode || 'interval';
+        // typeSelect será atualizado depois de popular as opções
+        if (settings.typeSelect) {
+            // Vamos guardar temporariamente para aplicar depois
+            window.tempTypeSelect = settings.typeSelect;
+        }
+        return true;
+    } catch (e) {
+        console.warn("Erro ao carregar configurações salvas:", e);
+        return false;
+    }
+}
+
+// === RESTANTE DO CÓDIGO (igual ao original, com pequenas adaptações) ===
+
 function updateTypeOptions() {
     const mode = document.getElementById('analysisMode').value;
     const typeSelect = document.getElementById('typeSelect');
@@ -66,6 +102,13 @@ function updateTypeOptions() {
         opt.textContent = item.name;
         typeSelect.appendChild(opt);
     });
+
+    // Aplicar valor salvo do typeSelect, se existir
+    if (window.tempTypeSelect !== undefined) {
+        typeSelect.value = window.tempTypeSelect;
+        delete window.tempTypeSelect;
+    }
+
     updateDiagram();
 }
 
@@ -96,7 +139,6 @@ function updateDiagram() {
     document.getElementById('fingerboard').setAttribute("width", boardWidth);
     document.getElementById('nut').setAttribute("x2", 25 + boardWidth);
 
-    // Trastes
     Object.values(POSITIONS).forEach(y => {
         if (y === 20) return;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -128,12 +170,16 @@ function updateDiagram() {
             }
         }
     });
+
+    // Salvar sempre que o diagrama for atualizado
+    saveSettings();
 }
+
+// ... (funções updateLegend, drawMarker permanecem iguais)
 
 function updateLegend(targets) {
     const container = document.getElementById('legend');
     container.innerHTML = '';
-    // Filtra duplicatas de labels para a legenda (importante para oitavas)
     const uniqueTargets = Array.from(new Set(targets.map(t => t.label)))
         .map(label => targets.find(t => t.label === label));
 
@@ -159,23 +205,33 @@ function drawMarker(x, y, label, color) {
     document.getElementById('markers-layer').appendChild(g);
 }
 
-// Inicialização e Listeners
+// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
+    // Carregar configurações salvas (se houver)
+    loadSettings();
+
+    // Listeners
     const analysisMode = document.getElementById('analysisMode');
-    analysisMode.addEventListener('change', updateTypeOptions);
-    
-    document.querySelectorAll('select').forEach(s => {
-        s.addEventListener('change', updateDiagram);
+    analysisMode.addEventListener('change', () => {
+        updateTypeOptions();
+        saveSettings();
     });
-    
+
+    // Todos os outros selects atualizam o diagrama e salvam
+    ['stringCount', 'tuningSelect', 'rootNote', 'typeSelect'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+            updateDiagram();
+            // saveSettings() já é chamado dentro de updateDiagram()
+        });
+    });
+
     document.getElementById('micBtn').addEventListener('click', toggleMic);
-    
-    updateTypeOptions(); // Inicializa o seletor de tipos e o diagrama
+
+    // Inicializa opções e diagrama (respeitando valores carregados)
+    updateTypeOptions();
 });
 
-/**
- * LÓGICA DO MICROFONE (PITCH DETECTION)
- */
+// === LÓGICA DO MICROFONE (inalterada) ===
 async function toggleMic() {
     const btn = document.getElementById('micBtn');
     if (!isListening) {
@@ -195,6 +251,7 @@ async function toggleMic() {
     }
 }
 
+// ... (funções runPitchDetection, autoCorrelate, drawLiveMarker permanecem iguais ao original)
 function runPitchDetection() {
     if (!isListening) return;
     const buffer = new Float32Array(analyser.fftSize);
