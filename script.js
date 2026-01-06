@@ -308,33 +308,43 @@ function drawMarker(x, y, label, color) {
     document.getElementById('markers-layer').appendChild(g);
 }
 
-// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
+    updateTypeOptions();
 
-    const analysisMode = document.getElementById('analysisMode');
-    analysisMode.addEventListener('change', () => {
+    const svgElement = document.getElementById('violin-svg');
+
+    // Função única para desbloquear e tocar
+    const handleInteraction = (e) => {
+        // 1. Criar/Retomar o contexto (Obrigatório para iOS)
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        // 2. Chamar sua função de clique original
+        handleSVGClick(e);
+    };
+
+    // Usamos pointerdown que funciona em Mouse e Touch
+    svgElement.addEventListener('pointerdown', handleInteraction);
+
+    // Impedir que o toque cause scroll ou zoom no SVG
+    svgElement.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
+    // Restante dos eventos (mantidos iguais)
+    document.getElementById('analysisMode').addEventListener('change', () => {
         updateTypeOptions();
         saveSettings();
     });
 
     ['stringCount', 'tuningSelect', 'rootNote', 'typeSelect'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
-            updateDiagram();
-        });
+        document.getElementById(id).addEventListener('change', updateDiagram);
     });
 
     document.getElementById('micBtn').addEventListener('click', toggleMic);
-
-    document.getElementById('violin-svg').addEventListener('pointerdown', (e) => {
-        // Garante que o contexto de áudio inicie no celular
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        
-        handleSVGClick(e);
-    });
-
-    updateTypeOptions();
 });
 
 // === LÓGICA DO MICROFONE (mantida inalterada) ===
