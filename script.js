@@ -98,6 +98,8 @@ function playNote(freq) {
 
 // === NOVA FUNÇÃO PARA IDENTIFICAR CLIQUE NO BRAÇO ===
 function handleSVGClick(event) {
+    event.preventDefault(); // Adicione isso para evitar conflitos no touch do celular
+    
     const svg = document.getElementById('violin-svg');
     const point = svg.createSVGPoint();
     point.x = event.clientX;
@@ -324,8 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('micBtn').addEventListener('click', toggleMic);
 
-    // Adiciona o ouvinte de clique ao SVG para tocar o som
-    document.getElementById('violin-svg').addEventListener('mousedown', handleSVGClick);
+    document.getElementById('violin-svg').addEventListener('pointerdown', (e) => {
+        // Garante que o contexto de áudio inicie no celular
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        handleSVGClick(e);
+    });
 
     updateTypeOptions();
 });
