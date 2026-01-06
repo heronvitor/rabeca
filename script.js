@@ -20,7 +20,6 @@ const COLOR_MAP = {
     12: { color: '#2ecc71', label: 'Oitava' }
 };
 
-// NOVO: Agora com modo "scale" e escalas nordestinas
 const MODES_DATA = {
     interval: [
         { name: "2ª Menor", steps: [0, 1] },
@@ -65,7 +64,80 @@ const X_COORDS = [40, 70, 100, 130, 160];
 
 let audioCtx, analyser, isListening = false, smoothedFreq = 0;
 
-// === PERSISTÊNCIA (mantida) ===
+// === NOVA FUNÇÃO PARA REPRODUZIR SOM ===
+function playNote(freq) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter(); // Adicionamos um filtro para dar o tom "rouco"
+
+    // 'sawtooth' (dente de serra) é o timbre padrão para simular violinos
+    osc.type = 'sawtooth'; 
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+    // Configuração do Filtro (Aqui é onde transformamos violino em rabeca)
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1500, audioCtx.currentTime); // Corta o agudo "ardido" do digital
+    filter.Q.setValueAtTime(5, audioCtx.currentTime); // Dá uma leve ressonância na região média
+
+    // Envelope de Volume (Sustentação longa conforme solicitado)
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.15); // Ataque um pouco mais lento para simular a arcada
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.5); // Decaimento suave
+
+    // Conexão: Oscilador -> Filtro -> Ganho -> Saída
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 2.6);
+}
+
+// === NOVA FUNÇÃO PARA IDENTIFICAR CLIQUE NO BRAÇO ===
+function handleSVGClick(event) {
+    const svg = document.getElementById('violin-svg');
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    
+    const svgPoint = point.matrixTransform(svg.getScreenCTM().inverse());
+    const x = svgPoint.x - 30; // Ajuste do translate
+    const y = svgPoint.y - 40; // Ajuste do translate
+
+    const count = parseInt(document.getElementById('stringCount').value);
+    const tuningKey = document.getElementById('tuningSelect').value;
+    const currentTuning = TUNINGS[tuningKey].slice(0, count);
+
+    // Achar corda mais próxima
+    let strIdx = -1;
+    let minDistX = 15;
+    X_COORDS.slice(0, count).forEach((cx, i) => {
+        if (Math.abs(cx - x) < minDistX) {
+            minDistX = Math.abs(cx - x);
+            strIdx = i;
+        }
+    });
+
+    // Achar traste/posição mais próxima
+    let semi = -1;
+    let minDistY = 22;
+    Object.entries(POSITIONS).forEach(([s, cy]) => {
+        if (Math.abs(cy - y) < minDistY) {
+            minDistY = Math.abs(cy - y);
+            semi = parseInt(s);
+        }
+    });
+
+    if (strIdx !== -1 && semi !== -1) {
+        const freq = currentTuning[strIdx].f * Math.pow(2, semi / 12);
+        playNote(freq);
+    }
+}
+
+// === PERSISTÊNCIA  ===
 function saveSettings() {
     const settings = {
         stringCount: document.getElementById('stringCount').value,
@@ -131,11 +203,10 @@ function updateDiagram() {
 
     const targetNotes = selectedData.steps.map(step => ({
         name: CHROMATIC_SCALE[(rootIdx + step) % 12],
-        color: COLOR_MAP[step % 12].color,  // Usa o passo módulo 12 para cor correta
+        color: COLOR_MAP[step % 12].color,
         label: COLOR_MAP[step % 12].label
     }));
 
-    // Limpa camadas
     document.getElementById('markers-layer').innerHTML = '';
     document.getElementById('strings-layer').innerHTML = '';
     document.getElementById('labels-layer').innerHTML = '';
@@ -146,7 +217,6 @@ function updateDiagram() {
     document.getElementById('fingerboard').setAttribute("width", boardWidth);
     document.getElementById('nut').setAttribute("x2", 25 + boardWidth);
 
-    // Trastes
     Object.values(POSITIONS).forEach(y => {
         if (y === 20) return;
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -156,7 +226,6 @@ function updateDiagram() {
         document.getElementById('frets-layer').appendChild(line);
     });
 
-    // === ENCONTRA A PRIMEIRA TÔNICA (nota mais grave) ===
     let tonicStringIndex = null;
     let tonicStepIndex = null;
 
@@ -173,7 +242,6 @@ function updateDiagram() {
         if (tonicStringIndex !== null) break;
     }
 
-    // Cordas e marcadores
     currentTuning.forEach((conf, i) => {
         const x = X_COORDS[i];
         
@@ -188,17 +256,11 @@ function updateDiagram() {
         document.getElementById('labels-layer').appendChild(t);
 
         for (let s = 0; s <= 7; s++) {
-
-            // 🚫 OMITE A ÚLTIMA POSIÇÃO (duplica a próxima corda solta)
             if (s === 7) continue;
 
-            // 🔒 BLOQUEIA TUDO ANTES DA TÔNICA
             if (
                 tonicStringIndex !== null &&
-                (
-                    i < tonicStringIndex || 
-                    (i === tonicStringIndex && s < tonicStepIndex)
-                )
+                (i < tonicStringIndex || (i === tonicStringIndex && s < tonicStepIndex))
             ) {
                 continue;
             }
@@ -234,6 +296,7 @@ function drawMarker(x, y, label, color) {
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", "12");
     c.setAttribute("fill", color); c.setAttribute("stroke", "white");
+    c.style.cursor = "pointer"; // Indica que é clicável
     
     const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
     t.setAttribute("x", x); t.setAttribute("y", y + 4); t.setAttribute("class", "label-note");
@@ -261,10 +324,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('micBtn').addEventListener('click', toggleMic);
 
+    // Adiciona o ouvinte de clique ao SVG para tocar o som
+    document.getElementById('violin-svg').addEventListener('mousedown', handleSVGClick);
+
     updateTypeOptions();
 });
 
-// === LÓGICA DO MICROFONE ===
+// === LÓGICA DO MICROFONE (mantida inalterada) ===
 async function toggleMic() {
     const btn = document.getElementById('micBtn');
     if (!isListening) {
@@ -284,7 +350,6 @@ async function toggleMic() {
     }
 }
 
-// ... (funções runPitchDetection, autoCorrelate, drawLiveMarker permanecem iguais ao original)
 function runPitchDetection() {
     if (!isListening) return;
     const buffer = new Float32Array(analyser.fftSize);
@@ -302,21 +367,16 @@ function autoCorrelate(buffer, sampleRate) {
     let rms = 0;
     for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
     if (Math.sqrt(rms / SIZE) < 0.01) return -1;
-
     let r1 = 0, r2 = SIZE - 1, thres = 0.2;
     for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
     for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
-    
     let buf = buffer.slice(r1, r2);
     let c = new Array(buf.length).fill(0);
     for (let i = 0; i < buf.length; i++)
         for (let j = 0; j < buf.length - i; j++) c[i] = c[i] + buf[j] * buf[j + i];
-
     let d = 0; while (c[d] > c[d + 1]) d++;
     let maxval = -1, maxpos = -1;
-    for (let i = d; i < buf.length; i++) {
-        if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
-    }
+    for (let i = d; i < buf.length; i++) if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
     return sampleRate / maxpos;
 }
 
@@ -324,76 +384,44 @@ function drawLiveMarker(freq) {
     const tuningKey = document.getElementById('tuningSelect').value;
     const count = parseInt(document.getElementById('stringCount').value);
     const tuning = TUNINGS[tuningKey].slice(0, count);
-    
     let bestStr = -1, bestY = -1, nearestNoteName = "";
-
     tuning.forEach((st, i) => {
-        // Calcula quantos semitons acima da corda solta (valor decimal, ex: 3.45)
         const semi = 12 * Math.log2(freq / st.f);
-        
-        // Verifica se está dentro da área desenhável do braço
         if (semi >= -0.5 && semi <= 7.5) {
             bestStr = i;
-            
-            // Cálculo da posição Y suave (interpolação)
             const base = Math.floor(semi), frac = semi - base;
             const y1 = POSITIONS[Math.max(0,base)], y2 = POSITIONS[Math.min(7,base+1)];
             bestY = y1 + (y2-y1)*frac;
-
-            // NOVO: Cálculo da nota mais próxima (arredondamento)
-            // Arredonda o semitom decimal para o inteiro mais próximo
             const closestSemiIndex = Math.round(semi);
-            // Calcula o índice na escala cromática
             const chromaticIdx = (st.idx + closestSemiIndex) % 12;
-            // Garante que o índice seja positivo (para segurança) e pega o nome
             nearestNoteName = CHROMATIC_SCALE[(chromaticIdx + 12) % 12];
         }
     });
-
-    // Referência ao GRUPO do marcador vivo, não apenas ao círculo
     let liveGroup = document.getElementById('live-marker-group');
-
     if (bestStr !== -1 && bestY !== -1) {
         const xPos = X_COORDS[bestStr];
-
-        // Se o grupo ainda não existe, cria a estrutura completa (Grupo > Círculo + Texto)
         if(!liveGroup) {
             liveGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             liveGroup.id = 'live-marker-group';
-
-            // Círculo
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.id = 'live-marker-circle'; // ID específico para o círculo
+            circle.id = 'live-marker-circle';
             circle.setAttribute("r", "15");
             circle.setAttribute("fill", "none"); 
             circle.setAttribute("stroke", "cyan");
             circle.setAttribute("stroke-width", "3"); 
             circle.setAttribute("stroke-dasharray", "4");
-            
-            // Texto
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.id = 'live-marker-text'; // ID específico para o texto
+            text.id = 'live-marker-text';
             text.setAttribute("class", "live-note-label");
-
-            liveGroup.appendChild(circle);
-            liveGroup.appendChild(text);
+            liveGroup.appendChild(circle); liveGroup.appendChild(text);
             document.getElementById('markers-layer').appendChild(liveGroup);
         }
-        
-        // Atualiza as posições e o texto dos elementos existentes
         const circle = document.getElementById('live-marker-circle');
         const text = document.getElementById('live-marker-text');
-
-        circle.setAttribute("cx", xPos); 
-        circle.setAttribute("cy", bestY);
-
-        // Como usamos 'dominant-baseline: central' no CSS, o Y é o centro exato
-        text.setAttribute("x", xPos); 
-        text.setAttribute("y", bestY); 
+        circle.setAttribute("cx", xPos); circle.setAttribute("cy", bestY);
+        text.setAttribute("x", xPos); text.setAttribute("y", bestY); 
         text.textContent = nearestNoteName;
-
     } else if (liveGroup) {
-        // Remove o grupo inteiro se não houver frequência válida
         liveGroup.remove();
     }
 }
