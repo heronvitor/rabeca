@@ -44,11 +44,14 @@ const MODES_DATA = {
         { name: "Menor com 7ª (m7)", steps: [0, 3, 7, 10] }
     ],
     scale: [
-        { name: "Maior (Iônica)", steps: [0, 2, 4, 5, 7, 9, 11] },
-        { name: "Menor Natural (Eólica)", steps: [0, 2, 3, 5, 7, 8, 10] },
-        { name: "Baiana", steps: [0, 2, 3, 5, 7, 9, 10] },         // Dórico com 6ª maior
-        { name: "Caboclinha", steps: [0, 2, 3, 4, 5, 7, 8, 10] }, // Tem a blue note (4# ou 5b)
-        { name: "Meia-Entrada", steps: [0, 2, 4, 5, 7, 8, 10] }  // Muito usada no forró
+        { name: "Maior", steps: [0, 2, 4, 5, 7, 9, 11] },
+        { name: "Menor Natural", steps: [0, 2, 3, 5, 7, 8, 10] },
+        { name: "Menor Melódica", steps: [0, 2, 3, 5, 7, 9, 11] },
+        { name: "Mixolídio", steps: [0, 2, 4, 5, 7, 9, 10] },
+        { name: "Lídio b7", steps: [0, 2, 4, 6, 7, 9, 10] },
+        { name: "Dórico", steps: [0, 2, 3, 5, 7, 9, 10] },
+        { name: "Pentatônica Maior", steps: [0, 2, 4, 7, 9] },
+        { name: "Pentatônica Menor", steps: [0, 3, 5, 7, 10] },
     ]
 };
 
