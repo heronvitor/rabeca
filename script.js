@@ -153,6 +153,23 @@ function updateDiagram() {
         document.getElementById('frets-layer').appendChild(line);
     });
 
+    // === ENCONTRA A PRIMEIRA TÔNICA (nota mais grave) ===
+    let tonicStringIndex = null;
+    let tonicStepIndex = null;
+
+    for (let i = 0; i < currentTuning.length; i++) {
+        const conf = currentTuning[i];
+        for (let s = 0; s <= 7; s++) {
+            const noteName = CHROMATIC_SCALE[(conf.idx + s) % 12];
+            if (noteName === rootNote) {
+                tonicStringIndex = i;
+                tonicStepIndex = s;
+                break;
+            }
+        }
+        if (tonicStringIndex !== null) break;
+    }
+
     // Cordas e marcadores
     currentTuning.forEach((conf, i) => {
         const x = X_COORDS[i];
@@ -168,8 +185,24 @@ function updateDiagram() {
         document.getElementById('labels-layer').appendChild(t);
 
         for (let s = 0; s <= 7; s++) {
+
+            // 🚫 OMITE A ÚLTIMA POSIÇÃO (duplica a próxima corda solta)
+            if (s === 7) continue;
+
+            // 🔒 BLOQUEIA TUDO ANTES DA TÔNICA
+            if (
+                tonicStringIndex !== null &&
+                (
+                    i < tonicStringIndex || 
+                    (i === tonicStringIndex && s < tonicStepIndex)
+                )
+            ) {
+                continue;
+            }
+
             const currentNoteName = CHROMATIC_SCALE[(conf.idx + s) % 12];
             const match = targetNotes.find(tn => tn.name === currentNoteName);
+
             if (match) {
                 drawMarker(x, POSITIONS[s], currentNoteName, match.color);
             }
