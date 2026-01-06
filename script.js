@@ -358,8 +358,8 @@ async function toggleMic() {
             analyser.fftSize = 2048;
             audioCtx.createMediaStreamSource(stream).connect(analyser);
             isListening = true;
-            btn.innerHTML = "🔴"; // Ícone de gravando
-            btn.classList.add('active');
+            btn.textContent = "Parar";
+            btn.style.background = "#2ecc71";
             runPitchDetection();
         } catch (e) { alert("Microfone não disponível."); }
     } else {
@@ -442,18 +442,3 @@ function drawLiveMarker(freq) {
         liveGroup.remove();
     }
 }
-
-document.getElementById('audioBtn').addEventListener('click', function() {
-    const SILENCE_STR = "data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFhYAAAAWAAAREUAb25lIHNlY29uZCBvZiBzaWxlbmNlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/++SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABYaW5nAAAADAAAAAYAAA0AEREREREREREREREREREREREREREREREREREREf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AAAAA";
-    const audio = new Audio();
-    audio.src = SILENCE_STR;
-
-    audio.play().then(() => {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
-        // Atualiza ícone e cor
-        this.innerHTML = "🔊";
-        this.classList.add('active');
-    }).catch(e => console.error("Erro ao ativar áudio", e));
-});
