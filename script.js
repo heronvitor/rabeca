@@ -244,12 +244,14 @@ function updateDiagram() {
         if (tonicStringIndex !== null) break;
     }
 
-    currentTuning.forEach((conf, i) => {
+    for (let i = currentTuning.length - 1; i >= 0; i--) {
+        const conf = currentTuning[i];
         const x = X_COORDS[i];
         
         const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
         l.setAttribute("x1", x); l.setAttribute("y1", 20); l.setAttribute("x2", x); l.setAttribute("y2", 540);
-        l.setAttribute("stroke", "#ced6e0"); l.setAttribute("stroke-width", [4,3,2,1.5,1][i]);
+        l.setAttribute("stroke", "#ced6e0"); 
+        l.setAttribute("stroke-width", [4,3,2,1.5,1][i]);
         document.getElementById('strings-layer').appendChild(l);
 
         const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -257,9 +259,7 @@ function updateDiagram() {
         t.textContent = conf.name;
         document.getElementById('labels-layer').appendChild(t);
 
-        for (let s = 0; s <= 7; s++) {
-            if (s === 7) continue;
-
+        for (let s = 6; s >= 0; s--) {
             if (
                 tonicStringIndex !== null &&
                 (i < tonicStringIndex || (i === tonicStringIndex && s < tonicStepIndex))
@@ -274,7 +274,7 @@ function updateDiagram() {
                 drawMarker(x, POSITIONS[s], currentNoteName, match.color);
             }
         }
-    });
+    }
 
     saveSettings();
 }
