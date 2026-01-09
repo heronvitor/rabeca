@@ -94,6 +94,7 @@ function playNote(freq) {
 
     osc.start();
     osc.stop(audioCtx.currentTime + 2.6);
+    updateStaff(freq);
 }
 
 // === NOVA FUNÇÃO PARA IDENTIFICAR CLIQUE NO BRAÇO ===
@@ -146,7 +147,8 @@ function saveSettings() {
         tuningSelect: document.getElementById('tuningSelect').value,
         rootNote: document.getElementById('rootNote').value,
         analysisMode: document.getElementById('analysisMode').value,
-        typeSelect: document.getElementById('typeSelect').value
+        typeSelect: document.getElementById('typeSelect').value,
+        showStaff: document.getElementById('showStaff').value // ADICIONE ESTA LINHA
     };
     localStorage.setItem('violinAppSettings', JSON.stringify(settings));
 }
@@ -161,6 +163,11 @@ function loadSettings() {
         document.getElementById('tuningSelect').value = settings.tuningSelect || 'cavalo';
         document.getElementById('rootNote').value = settings.rootNote || 'G';
         document.getElementById('analysisMode').value = settings.analysisMode || 'interval';
+        
+        const showStaffValue = settings.showStaff || 'true';
+        document.getElementById('showStaff').value = showStaffValue;
+        document.getElementById('staff-container').style.display = (showStaffValue === 'true') ? 'block' : 'none';
+
         if (settings.typeSelect) {
             window.tempTypeSelect = settings.typeSelect;
         }
@@ -375,6 +382,7 @@ function runPitchDetection() {
     if (freq !== -1 && freq < 1000) {
         smoothedFreq = 0.15 * freq + 0.85 * smoothedFreq;
         drawLiveMarker(smoothedFreq);
+        updateStaff(smoothedFreq);
     }
     requestAnimationFrame(runPitchDetection);
 }
@@ -442,3 +450,68 @@ function drawLiveMarker(freq) {
         liveGroup.remove();
     }
 }
+
+function updateStaff(freq) {
+    const noteLayer = document.getElementById('note-layer');
+    if (!noteLayer) return;
+    noteLayer.innerHTML = ''; 
+
+    if (freq < 130) return; 
+
+    const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const STAFF_POS = { 'C': 0, 'C#': 0, 'D': 1, 'D#': 1, 'E': 2, 'F': 3, 'F#': 3, 'G': 4, 'G#': 4, 'A': 5, 'A#': 5, 'B': 6 };
+    
+    const midi = Math.round(12 * Math.log2(freq / 440) + 69);
+    const noteName = CHROMATIC_SCALE[midi % 12];
+    const octave = Math.floor(midi / 12) - 1;
+    
+    const staffBaseIndex = (octave - 4) * 7 + STAFF_POS[noteName];
+    const yPos = 160 - (staffBaseIndex * 10);
+
+    if (yPos >= 160) {
+        for (let y = 160; y <= yPos; y += 20) {
+            drawLedgerLine(y, noteLayer);
+        }
+    }
+    
+    if (yPos <= 40) {
+        for (let y = 40; y >= yPos; y -= 20) {
+            drawLedgerLine(y, noteLayer);
+        }
+    }
+
+    const noteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    noteText.setAttribute("x", 290);
+    noteText.setAttribute("y", yPos + 8);
+    noteText.setAttribute("style", "font-size: 60px; font-family: serif; pointer-events: none;");
+    noteText.textContent = "𝅗𝅥"; 
+    noteLayer.appendChild(noteText);
+
+    if (noteName.includes('#')) {
+        const sharp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        sharp.setAttribute("x", 265);
+        sharp.setAttribute("y", yPos + 5);
+        sharp.setAttribute("style", "font-size: 35px; font-family: serif; font-weight: bold; pointer-events: none;");
+        sharp.textContent = "#";
+        noteLayer.appendChild(sharp);
+    }
+}
+
+function drawLedgerLine(y, layer) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", 280); 
+    line.setAttribute("x2", 330);
+    line.setAttribute("y1", y); 
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "black"); 
+    line.setAttribute("stroke-width", "2");
+    layer.appendChild(line);
+}
+
+function toggleStaff() {
+    const show = document.getElementById('showStaff').value === 'true';
+    document.getElementById('staff-container').style.display = show ? 'block' : 'none';
+    saveSettings();
+}
+
+document.getElementById('showStaff').addEventListener('change', toggleStaff);
