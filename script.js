@@ -1,7 +1,3 @@
-/**
- * VIOLINO & RABECA INTERATIVA - COM ESCALAS NORDESTINAS
- */
-
 const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const COLOR_MAP = {
@@ -64,30 +60,25 @@ const X_COORDS = [40, 70, 100, 130, 160];
 
 let audioCtx, analyser, isListening = false, smoothedFreq = 0;
 
-// === NOVA FUNÇÃO PARA REPRODUZIR SOM ===
 function playNote(freq) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter(); // Adicionamos um filtro para dar o tom "rouco"
+    const filter = audioCtx.createBiquadFilter();
 
-    // 'sawtooth' (dente de serra) é o timbre padrão para simular violinos
     osc.type = 'sawtooth'; 
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
-    // Configuração do Filtro (Aqui é onde transformamos violino em rabeca)
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1500, audioCtx.currentTime); // Corta o agudo "ardido" do digital
-    filter.Q.setValueAtTime(5, audioCtx.currentTime); // Dá uma leve ressonância na região média
+    filter.frequency.setValueAtTime(1500, audioCtx.currentTime);
+    filter.Q.setValueAtTime(5, audioCtx.currentTime);
 
-    // Envelope de Volume (Sustentação longa conforme solicitado)
     gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.15); // Ataque um pouco mais lento para simular a arcada
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.5); // Decaimento suave
+    gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 2.5);
 
-    // Conexão: Oscilador -> Filtro -> Ganho -> Saída
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(audioCtx.destination);
@@ -97,9 +88,8 @@ function playNote(freq) {
     updateStaff(freq);
 }
 
-// === NOVA FUNÇÃO PARA IDENTIFICAR CLIQUE NO BRAÇO ===
 function handleSVGClick(event) {
-    event.preventDefault(); // Adicione isso para evitar conflitos no touch do celular
+    event.preventDefault();
     
     const svg = document.getElementById('violin-svg');
     const point = svg.createSVGPoint();
@@ -107,14 +97,13 @@ function handleSVGClick(event) {
     point.y = event.clientY;
     
     const svgPoint = point.matrixTransform(svg.getScreenCTM().inverse());
-    const x = svgPoint.x - 30; // Ajuste do translate
-    const y = svgPoint.y - 40; // Ajuste do translate
+    const x = svgPoint.x - 30;
+    const y = svgPoint.y - 40;
 
     const count = parseInt(document.getElementById('stringCount').value);
     const tuningKey = document.getElementById('tuningSelect').value;
     const currentTuning = TUNINGS[tuningKey].slice(0, count);
 
-    // Achar corda mais próxima
     let strIdx = -1;
     let minDistX = 15;
     X_COORDS.slice(0, count).forEach((cx, i) => {
@@ -124,7 +113,6 @@ function handleSVGClick(event) {
         }
     });
 
-    // Achar traste/posição mais próxima
     let semi = -1;
     let minDistY = 22;
     Object.entries(POSITIONS).forEach(([s, cy]) => {
@@ -140,7 +128,6 @@ function handleSVGClick(event) {
     }
 }
 
-// === PERSISTÊNCIA  ===
 function saveSettings() {
     const settings = {
         stringCount: document.getElementById('stringCount').value,
@@ -178,7 +165,6 @@ function loadSettings() {
     }
 }
 
-// === FUNÇÕES PRINCIPAIS ===
 function updateTypeOptions() {
     const mode = document.getElementById('analysisMode').value;
     const typeSelect = document.getElementById('typeSelect');
