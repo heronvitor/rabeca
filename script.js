@@ -455,29 +455,42 @@ function updateStaff(freq) {
     const yPos = 160 - (staffBaseIndex * 10);
 
     if (yPos >= 160) {
-        for (let y = 160; y <= yPos; y += 20) {
-            drawLedgerLine(y, noteLayer);
-        }
+        for (let y = 160; y <= yPos; y += 20) { drawLedgerLine(y, noteLayer); }
     }
-    
     if (yPos <= 40) {
-        for (let y = 40; y >= yPos; y -= 20) {
-            drawLedgerLine(y, noteLayer);
-        }
+        for (let y = 40; y >= yPos; y -= 20) { drawLedgerLine(y, noteLayer); }
     }
 
-    const noteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    noteText.setAttribute("x", 290);
-    noteText.setAttribute("y", yPos + 8);
-    noteText.setAttribute("style", "font-size: 60px; font-family: serif; pointer-events: none;");
-    noteText.textContent = "𝅗𝅥"; 
-    noteLayer.appendChild(noteText);
+    const noteX = 300;
+
+    const head = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    head.setAttribute("cx", noteX);
+    head.setAttribute("cy", yPos);
+    head.setAttribute("rx", "9");
+    head.setAttribute("ry", "7");
+    head.setAttribute("fill", "black");
+    head.setAttribute("stroke", "black");
+    head.setAttribute("stroke-width", "2");
+    head.setAttribute("transform", `rotate(-20, ${noteX}, ${yPos})`);
+    noteLayer.appendChild(head);
+
+    const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    if (yPos <= 100) {
+        stem.setAttribute("x1", noteX - 7.5); stem.setAttribute("y1", yPos + 2);
+        stem.setAttribute("x2", noteX - 7.5); stem.setAttribute("y2", yPos + 55);
+    } else {
+        stem.setAttribute("x1", noteX + 7.5); stem.setAttribute("y1", yPos - 2);
+        stem.setAttribute("x2", noteX + 7.5); stem.setAttribute("y2", yPos - 55);
+    }
+    stem.setAttribute("stroke", "black");
+    stem.setAttribute("stroke-width", "2");
+    noteLayer.appendChild(stem);
 
     if (noteName.includes('#')) {
         const sharp = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        sharp.setAttribute("x", 265);
-        sharp.setAttribute("y", yPos + 5);
-        sharp.setAttribute("style", "font-size: 35px; font-family: serif; font-weight: bold; pointer-events: none;");
+        sharp.setAttribute("x", noteX - 25);
+        sharp.setAttribute("y", yPos + 8);
+        sharp.setAttribute("style", "font-size: 30px; font-family: sans-serif; font-weight: bold;");
         sharp.textContent = "#";
         noteLayer.appendChild(sharp);
     }
