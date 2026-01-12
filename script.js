@@ -307,9 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const svgElement = document.getElementById('violin-svg');
 
-    // Função única para desbloquear e tocar
     const handleInteraction = (e) => {
-        // 1. Criar/Retomar o contexto (Obrigatório para iOS)
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
@@ -317,17 +315,13 @@ document.addEventListener('DOMContentLoaded', () => {
             audioCtx.resume();
         }
 
-        // 2. Chamar sua função de clique original
         handleSVGClick(e);
     };
 
-    // Usamos pointerdown que funciona em Mouse e Touch
     svgElement.addEventListener('pointerdown', handleInteraction);
 
-    // Impedir que o toque cause scroll ou zoom no SVG
     svgElement.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 
-    // Restante dos eventos (mantidos iguais)
     document.getElementById('analysisMode').addEventListener('change', () => {
         updateTypeOptions();
         saveSettings();
@@ -340,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('micBtn').addEventListener('click', toggleMic);
 });
 
-// === LÓGICA DO MICROFONE (mantida inalterada) ===
 async function toggleMic() {
     const btn = document.getElementById('micBtn');
     if (!isListening) {
