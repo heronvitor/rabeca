@@ -1,5 +1,5 @@
 import { parseChord, degreeOf, noteName } from './chords.js';
-import { parseCifra, layoutChordLine, uniqueChords } from './cifra.js';
+import { parseCifra, layoutChordLine, uniqueChords, cleanPastedText } from './cifra.js';
 import { findVoicings } from './voicings.js';
 import { renderChordDiagram } from './chordDiagram.js';
 import { MANDOLIN } from './instruments.js';
@@ -192,7 +192,8 @@ function selectChord(symbol) {
 }
 
 function showResult() {
-    state.text = $('cifraInput').value;
+    state.text = cleanPastedText($('cifraInput').value);
+    $('cifraInput').value = state.text;
     state.lines = parseCifra(state.text);
     state.voicingIndex.clear();
     saveState();
@@ -218,6 +219,11 @@ function init() {
     initSidebar();
 
     $('showBtn').addEventListener('click', showResult);
+    $('cifraInput').addEventListener('paste', () => setTimeout(() => {
+        const input = $('cifraInput');
+        const cleaned = cleanPastedText(input.value);
+        if (cleaned !== input.value) input.value = cleaned;
+    }));
     $('labelMode').addEventListener('change', (e) => {
         state.labelMode = e.target.value;
         saveState();

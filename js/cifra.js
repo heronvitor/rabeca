@@ -30,6 +30,18 @@ function isChordLine(tokens) {
     return tokens.some(t => t.chord) && tokens.every(t => t.chord || ANNOTATION_RE.test(t.text));
 }
 
+// Limpa o texto colado no celular: alguns teclados/navegadores entregam a cifra
+// codificada como URL ("%20", "%0A", "%C3%A7") e com espaços especiais.
+// Um "%" sozinho (repetição de compasso) não é alterado.
+export function cleanPastedText(text) {
+    return text
+        .replace(/(%[0-9A-Fa-f]{2})+/g, (seq) => {
+            try { return decodeURIComponent(seq); } catch (e) { return seq; }
+        })
+        .replace(/[   ]/g, ' ')
+        .replace(/[​-‍⁠﻿]/g, '');
+}
+
 // Classifica cada linha da cifra colada
 export function parseCifra(text) {
     return text.replace(/\r/g, '').split('\n').map(raw => {
