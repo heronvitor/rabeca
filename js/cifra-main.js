@@ -219,6 +219,10 @@ function init() {
     initSidebar();
 
     $('showBtn').addEventListener('click', showResult);
+    $('clearBtn').addEventListener('click', () => {
+        $('cifraInput').value = '';
+        $('cifraInput').focus();
+    });
     $('cifraInput').addEventListener('paste', () => setTimeout(() => {
         const input = $('cifraInput');
         const cleaned = cleanPastedText(input.value);

@@ -54,8 +54,21 @@
     resize: vertical;
 }
 
+.input-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.secondary-btn {
+    background: white;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
 .primary-btn {
-    align-self: flex-end;
     background: #27ae60;
     color: white;
     border: none;
