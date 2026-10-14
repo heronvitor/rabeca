@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bandolim: Acordes da Cifra</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/cifra.css">
+    <script type="module" src="js/cifra-main.js"></script>
+</head>
+
+<body>
+
+    <header class="topbar topbar-static">
+        <h2>Acordes da cifra no bandolim</h2>
+        <a class="nav-link" href="index.html">Rabeca →</a>
+    </header>
+
+    <section id="inputSection" class="card input-section">
+        <label for="cifraInput">Cole aqui a cifra copiada do Cifra Club:</label>
+        <textarea id="cifraInput" rows="12" spellcheck="false"
+            placeholder="[Intro] G  D  Em  C&#10;&#10;G              D&#10;  Letra da música..."></textarea>
+        <button id="showBtn" class="primary-btn">Mostrar acordes</button>
+    </section>
+
+    <section id="resultSection" class="result-section" hidden>
+        <div class="sticky-panel">
+            <div class="toolbar">
+                <button id="editBtn">✎ Editar cifra</button>
+                <div class="transpose" aria-label="Transpor">
+                    <button id="transposeDown" aria-label="Descer meio tom">−½</button>
+                    <span id="transposeValue">Tom original</span>
+                    <button id="transposeUp" aria-label="Subir meio tom">+½</button>
+                </div>
+            </div>
+            <div id="chordStrip" class="chord-strip"></div>
+        </div>
+
+        <pre id="cifraView" class="card cifra-view"></pre>
+    </section>
+
+    <div class="observation">
+        <strong>💡 Dica:</strong> toque num acorde da cifra para ver o desenho dele, e no desenho para ouvir.
+        Use ‹ › para ver outras digitações do mesmo acorde.
+    </div>
+</body>
+
+</html>
