@@ -1,10 +1,12 @@
-import { parseChord } from './chords.js';
+import { parseChord, degreeOf, noteName } from './chords.js';
 import { parseCifra, layoutChordLine, uniqueChords } from './cifra.js';
 import { findVoicings } from './voicings.js';
 import { renderChordDiagram } from './chordDiagram.js';
 import { MANDOLIN } from './instruments.js';
 import { getAudioContext, playNote } from './audio.js';
 import { frequencyAt } from './music.js';
+import { degreeStyle, DEGREE_FUNCTIONS } from './degreeStyle.js';
+import { initSidebar } from './sidebar.js';
 
 const STORAGE_KEY = 'cifraAppState';
 const STRUM_DELAY_MS = 60;
@@ -15,12 +17,15 @@ const state = {
     text: '',
     transpose: 0,
     lines: [],
+    labelMode: 'degree',      // 'degree' = graus, 'note' = nomes das notas
     voicingIndex: new Map()   // símbolo → digitação exibida
 };
 
 function saveState() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ text: state.text, transpose: state.transpose }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            text: state.text, transpose: state.transpose, labelMode: state.labelMode
+        }));
     } catch (e) { /* armazenamento indisponível: só não lembra a cifra */ }
 }
 
@@ -38,6 +43,32 @@ function strum(frets) {
         if (fret === null) return;
         setTimeout(() => playNote(frequencyAt(MANDOLIN.strings[i].f, fret)), i * STRUM_DELAY_MS);
     });
+}
+
+// Rótulo e cor da nota tocada na corda i, casa fret
+function noteDescriber(chord) {
+    const useFlats = chord.symbol.match(/^[A-G]b/) !== null;
+    return (i, fret) => {
+        const pc = (MANDOLIN.strings[i].idx + fret) % 12;
+        const { degree, inChord } = degreeOf(chord, pc);
+        const style = degreeStyle(degree, inChord);
+        return {
+            label: state.labelMode === 'note' ? noteName(pc, useFlats) : degree,
+            color: style.color,
+            textColor: style.text
+        };
+    };
+}
+
+function renderLegend() {
+    $('degreeLegend').replaceChildren(...DEGREE_FUNCTIONS.map(f => {
+        const item = document.createElement('li');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = f.color;
+        item.append(dot, f.label);
+        return item;
+    }));
 }
 
 function renderChordCard(symbol) {
@@ -76,7 +107,7 @@ function renderChordCard(symbol) {
     const show = (index) => {
         const i = (index + voicings.length) % voicings.length;
         state.voicingIndex.set(symbol, i);
-        const diagram = renderChordDiagram(voicings[i], MANDOLIN.strings, chord.root);
+        const diagram = renderChordDiagram(voicings[i], MANDOLIN.strings, noteDescriber(chord));
         diagram.setAttribute('role', 'button');
         diagram.setAttribute('aria-label', `Tocar ${symbol}`);
         diagram.addEventListener('click', () => strum(voicings[i]));
@@ -181,8 +212,17 @@ function init() {
     const saved = loadState();
     $('cifraInput').value = saved.text || '';
     state.transpose = saved.transpose || 0;
+    state.labelMode = saved.labelMode === 'note' ? 'note' : 'degree';
+    $('labelMode').value = state.labelMode;
+    renderLegend();
+    initSidebar();
 
     $('showBtn').addEventListener('click', showResult);
+    $('labelMode').addEventListener('change', (e) => {
+        state.labelMode = e.target.value;
+        saveState();
+        renderStrip();
+    });
     $('editBtn').addEventListener('click', () => {
         $('resultSection').hidden = true;
         $('inputSection').hidden = false;

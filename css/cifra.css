@@ -6,11 +6,20 @@
     position: static;
 }
 
-.nav-link {
-    flex-shrink: 0;
-    color: #2c3e50;
-    font-weight: bold;
-    text-decoration: none;
+.degree-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.degree-legend li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .card {
@@ -153,6 +162,14 @@
     font-size: 10px;
     text-anchor: middle;
     fill: #7f8c8d;
+}
+
+.diagram-note-label {
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
 }
 
 .diagram-open-label {

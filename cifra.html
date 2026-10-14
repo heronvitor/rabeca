@@ -14,8 +14,41 @@
 
     <header class="topbar topbar-static">
         <h2>Acordes da cifra no bandolim</h2>
-        <a class="nav-link" href="index.html">Rabeca →</a>
+        <div class="topbar-actions">
+            <button id="settingsBtn" class="icon-btn" aria-label="Abrir configurações"
+                aria-controls="sidebar" aria-expanded="false">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                    <path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 13.92 2h-3.84a.48.48 0 0 0-.48.41l-.36 2.54a7.03 7.03 0 0 0-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.72 8.47a.49.49 0 0 0 .12.61l2.03 1.58a7.07 7.07 0 0 0-.06.94c0 .32.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.25.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54a7.03 7.03 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+                </svg>
+            </button>
+        </div>
     </header>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" hidden></div>
+
+    <aside id="sidebar" class="sidebar" aria-label="Configurações" aria-hidden="true">
+        <div class="sidebar-header">
+            <h3>Configurações</h3>
+            <button id="closeSidebarBtn" class="icon-btn" aria-label="Fechar configurações">&times;</button>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="labelMode">Mostrar nas bolinhas:</label>
+                <select id="labelMode">
+                    <option value="degree" selected>Graus (1, 3, 5, b7…)</option>
+                    <option value="note">Notas (C, E, G…)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span>Cores por função:</span>
+                <ul id="degreeLegend" class="degree-legend"></ul>
+            </div>
+        </div>
+
+        <a class="sidebar-link" href="index.html">Rabeca: intervalos, acordes e escalas →</a>
+    </aside>
 
     <section id="inputSection" class="card input-section">
         <label for="cifraInput">Cole aqui a cifra copiada do Cifra Club:</label>
