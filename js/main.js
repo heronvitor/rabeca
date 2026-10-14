@@ -6,6 +6,7 @@ import { readControls, saveSettings, loadSettings } from './settings.js';
 import { renderFingerboard, hitTest, drawLiveMarker } from './fingerboard.js';
 import { renderStaffNote } from './staff.js';
 import { renderLegend } from './legend.js';
+import { initSidebar } from './sidebar.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -35,7 +36,7 @@ function updateTypeOptions(selectedType) {
 }
 
 function applyStaffVisibility() {
-    $('staff-container').style.display = readControls().showStaff ? 'block' : 'none';
+    $('staff-container').hidden = !readControls().showStaff;
 }
 
 function handleBoardPointer(event) {
@@ -91,6 +92,7 @@ function init() {
         saveSettings();
     });
     $('micBtn').addEventListener('click', toggleMic);
+    initSidebar();
 }
 
 init();

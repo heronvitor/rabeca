@@ -4,25 +4,192 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    margin: 0;
+    padding: 0 16px 20px;
+}
+
+body.sidebar-open {
+    overflow: hidden;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    width: 100%;
+    max-width: 900px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    margin-bottom: 12px;
+    background: #f4f4f9;
+}
+
+.topbar h2 {
+    margin: 0;
+    font-size: clamp(1.05rem, 4vw, 1.5rem);
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.mic-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #2c3e50;
+    background: white;
+    cursor: pointer;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 30;
+    width: min(300px, 85vw);
+    height: 100%;
+    box-sizing: border-box;
+    padding: 16px 20px;
+    overflow-y: auto;
+    background: white;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0.25s;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .controls {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     display: flex;
+    flex-direction: column;
     gap: 15px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px;
 }
 
 .control-group {
     display: flex;
     flex-direction: column;
     gap: 5px;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    cursor: pointer;
+}
+
+.toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toggle-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: #ccc;
+    transition: background 0.2s;
+}
+
+.toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-track {
+    background: #27ae60;
+}
+
+.toggle input:checked + .toggle-track::after {
+    transform: translateX(20px);
+}
+
+.toggle input:focus-visible + .toggle-track {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+#staff-container[hidden] {
+    display: none;
+}
+
+.control-group select {
+    width: 100%;
+    font-size: 1rem;
+}
+
+#staff-container,
+#svg-container {
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+#svg-container {
+    max-width: 350px;
+}
+
+#staff-svg,
+#violin-svg {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
 select,
@@ -34,6 +201,8 @@ button {
 
 #legend {
     background: white;
+    flex-wrap: wrap;
+    justify-content: center;
     padding: 15px;
     border-radius: 8px;
     display: flex;

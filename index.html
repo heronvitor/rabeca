@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rabeca: Intervalos, Acordes e Escalas</title>
     <link rel="stylesheet" href="css/styles.css">
     <script type="module" src="js/main.js"></script>
@@ -10,72 +11,86 @@
 
 <body>
 
-    <h2>Intervalos, Acordes e escalas</h2>
+    <header class="topbar">
+        <h2>Intervalos, Acordes e escalas</h2>
+        <div class="topbar-actions">
+            <button id="micBtn" class="mic-btn">Ativar Microfone</button>
+            <button id="settingsBtn" class="icon-btn" aria-label="Abrir configurações"
+                aria-controls="sidebar" aria-expanded="false">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+                    <path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 13.92 2h-3.84a.48.48 0 0 0-.48.41l-.36 2.54a7.03 7.03 0 0 0-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.72 8.47a.49.49 0 0 0 .12.61l2.03 1.58a7.07 7.07 0 0 0-.06.94c0 .32.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.25.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54a7.03 7.03 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
 
-    <div class="controls">
-        <div class="control-group">
-            <label>Nº de Cordas:</label>
-            <select id="stringCount">
-                <option value="5">5 Cordas</option>
-                <option value="4" selected>4 Cordas</option>
-            </select>
+    <div id="sidebar-overlay" class="sidebar-overlay" hidden></div>
+
+    <aside id="sidebar" class="sidebar" aria-label="Configurações" aria-hidden="true">
+        <div class="sidebar-header">
+            <h3>Configurações</h3>
+            <button id="closeSidebarBtn" class="icon-btn" aria-label="Fechar configurações">&times;</button>
         </div>
 
-        <div class="control-group">
-            <label>Afinação:</label>
-            <select id="tuningSelect">
-                <option value="standard">(C G D A E)</option>
-                <option value="cavalo" selected>(D A E B F#)</option>
-            </select>
-        </div>
+        <div class="controls">
+            <div class="control-group">
+                <label for="stringCount">Nº de Cordas:</label>
+                <select id="stringCount">
+                    <option value="5">5 Cordas</option>
+                    <option value="4" selected>4 Cordas</option>
+                </select>
+            </div>
 
-        <div class="control-group">
-            <label>Tônica</label>
-            <select id="rootNote">
-                <option value="C">C</option>
-                <option value="C#">C#</option>
-                <option value="D">D</option>
-                <option value="D#">D#</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-                <option value="F#">F#</option>
-                <option value="G" selected>G</option>
-                <option value="G#">G#</option>
-                <option value="A">A</option>
-                <option value="A#">A#</option>
-                <option value="B">B</option>
-            </select>
-        </div>
+            <div class="control-group">
+                <label for="tuningSelect">Afinação:</label>
+                <select id="tuningSelect">
+                    <option value="standard">(C G D A E)</option>
+                    <option value="cavalo" selected>(D A E B F#)</option>
+                </select>
+            </div>
 
-        <div class="control-group">
-            <label>Modo:</label>
-            <select id="analysisMode">
-                <option value="interval">Intervalos</option>
-                <option value="chord">Acordes</option>
-                <option value="scale">Escalas</option>
-            </select>
-        </div>
+            <div class="control-group">
+                <label for="rootNote">Tônica</label>
+                <select id="rootNote">
+                    <option value="C">C</option>
+                    <option value="C#">C#</option>
+                    <option value="D">D</option>
+                    <option value="D#">D#</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="F#">F#</option>
+                    <option value="G" selected>G</option>
+                    <option value="G#">G#</option>
+                    <option value="A">A</option>
+                    <option value="A#">A#</option>
+                    <option value="B">B</option>
+                </select>
+            </div>
 
-        <div class="control-group">
-            <label>Tipo:</label>
-            <select id="typeSelect">
-            </select>
-        </div>
+            <div class="control-group">
+                <label for="analysisMode">Modo:</label>
+                <select id="analysisMode">
+                    <option value="interval">Intervalos</option>
+                    <option value="chord">Acordes</option>
+                    <option value="scale">Escalas</option>
+                </select>
+            </div>
 
-        <div class="control-group" style="justify-content: flex-end;">
-            <button id="micBtn" style="background: #e74c3c; color: white; cursor: pointer;">Ativar Microfone</button>
-        </div>
+            <div class="control-group">
+                <label for="typeSelect">Tipo:</label>
+                <select id="typeSelect">
+                </select>
+            </div>
 
-        <div class="control-group">
-            <label>Mostrar Pauta:</label>
-            <select id="showStaff">
-                <option value="false">Não</option>
-                <option value="true" selected>Sim</option>
-            </select>
+            <label class="toggle" for="showStaff">
+                <span>Mostrar pauta musical</span>
+                <input type="checkbox" id="showStaff" role="switch">
+                <span class="toggle-track" aria-hidden="true"></span>
+            </label>
         </div>
-    </div>
+    </aside>
    
-    <div id="staff-container">
+    <div id="staff-container" hidden>
         <svg id="staff-svg" width="500" height="160" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
         <style>
             .music {
