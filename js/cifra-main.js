@@ -14,27 +14,55 @@ const STRUM_DELAY_MS = 60;
 const $ = (id) => document.getElementById(id);
 
 const state = {
-    text: '',
-    transpose: 0,
+    cifras: [],               // cifras salvas: { text, transpose }
+    current: 0,               // índice da cifra aberta
     lines: [],
     labelMode: 'degree',      // 'degree' = graus, 'note' = nomes das notas
     voicingIndex: new Map()   // símbolo → digitação exibida
 };
 
+const emptyCifra = () => ({ text: '', transpose: 0 });
+const cifra = () => state.cifras[state.current];
+
 function saveState() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            text: state.text, transpose: state.transpose, labelMode: state.labelMode
+            cifras: state.cifras, current: state.current, labelMode: state.labelMode
         }));
-    } catch (e) { /* armazenamento indisponível: só não lembra a cifra */ }
+    } catch (e) { /* armazenamento indisponível: só não lembra as cifras */ }
 }
 
 function loadState() {
+    let saved;
     try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+        saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
     } catch (e) {
-        return {};
+        saved = {};
     }
+    // Formato antigo guardava uma única cifra em { text, transpose }
+    if (!Array.isArray(saved.cifras)) {
+        saved.cifras = saved.text ? [{ text: saved.text, transpose: saved.transpose || 0 }] : [];
+    }
+    if (!saved.cifras.length) saved.cifras.push(emptyCifra());
+    saved.current = Math.min(Math.max(saved.current | 0, 0), saved.cifras.length - 1);
+    return saved;
+}
+
+// Nome da cifra no seletor: primeira linha de texto (no Cifra Club, o título da música)
+function cifraTitle(c, i) {
+    const line = parseCifra(c.text).find(l => l.type === 'text' && l.text.trim());
+    const title = line ? line.text.trim() : '';
+    return title.length > 40 ? title.slice(0, 40) + '…' : title || `Cifra ${i + 1}`;
+}
+
+function renderCifraSelect() {
+    $('cifraSelect').replaceChildren(...state.cifras.map((c, i) => {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = cifraTitle(c, i);
+        return option;
+    }));
+    $('cifraSelect').value = state.current;
 }
 
 function strum(frets) {
@@ -124,7 +152,7 @@ function renderChordCard(symbol) {
 
 function renderStrip() {
     const strip = $('chordStrip');
-    strip.replaceChildren(...uniqueChords(state.lines, state.transpose).map(renderChordCard));
+    strip.replaceChildren(...uniqueChords(state.lines, cifra().transpose).map(renderChordCard));
 }
 
 function renderChordLine(line) {
@@ -132,7 +160,7 @@ function renderChordLine(line) {
     fragment.append(line.prefix);
     let end = line.prefix.length;
 
-    layoutChordLine(line, state.transpose).forEach(t => {
+    layoutChordLine(line, cifra().transpose).forEach(t => {
         fragment.append(' '.repeat(t.col - end));
         end = t.col + t.text.length;
         if (!t.chord) {
@@ -167,7 +195,7 @@ function renderCifra() {
 }
 
 function renderTransposeLabel() {
-    const n = state.transpose;
+    const n = cifra().transpose;
     $('transposeValue').textContent = n === 0 ? 'Tom original' : `${n > 0 ? '+' : ''}${String(n / 2).replace('.', ',')} tom`;
 }
 
@@ -192,18 +220,53 @@ function selectChord(symbol) {
 }
 
 function showResult() {
-    state.text = cleanPastedText($('cifraInput').value);
-    $('cifraInput').value = state.text;
-    state.lines = parseCifra(state.text);
+    cifra().text = cleanPastedText($('cifraInput').value);
+    $('cifraInput').value = cifra().text;
+    state.lines = parseCifra(cifra().text);
     state.voicingIndex.clear();
     saveState();
+    renderCifraSelect();
     render();
     $('inputSection').hidden = true;
     $('resultSection').hidden = false;
 }
 
+function showInput(focus = true) {
+    $('resultSection').hidden = true;
+    $('inputSection').hidden = false;
+    if (focus) $('cifraInput').focus();
+}
+
+function openCifra(index, focus = true) {
+    state.current = index;
+    $('cifraInput').value = cifra().text;
+    renderCifraSelect();
+    if (cifra().text) {
+        showResult();
+    } else {
+        saveState();
+        showInput(focus);
+    }
+}
+
+function newCifra() {
+    if (cifra().text) {
+        state.cifras.push(emptyCifra());
+        openCifra(state.cifras.length - 1);
+    } else {
+        openCifra(state.current);
+    }
+}
+
+function deleteCifra() {
+    if (!confirm(`Apagar "${cifraTitle(cifra(), state.current)}"?`)) return;
+    state.cifras.splice(state.current, 1);
+    if (!state.cifras.length) state.cifras.push(emptyCifra());
+    openCifra(Math.min(state.current, state.cifras.length - 1));
+}
+
 function transpose(delta) {
-    state.transpose = (state.transpose + delta + 18) % 12 - 6 || 0;
+    cifra().transpose = (cifra().transpose + delta + 18) % 12 - 6 || 0;
     state.voicingIndex.clear();
     saveState();
     render();
@@ -211,17 +274,21 @@ function transpose(delta) {
 
 function init() {
     const saved = loadState();
-    $('cifraInput').value = saved.text || '';
-    state.transpose = saved.transpose || 0;
+    state.cifras = saved.cifras;
     state.labelMode = saved.labelMode === 'note' ? 'note' : 'degree';
     $('labelMode').value = state.labelMode;
     renderLegend();
     initSidebar();
 
     $('showBtn').addEventListener('click', showResult);
-    $('clearBtn').addEventListener('click', () => {
-        $('cifraInput').value = '';
-        $('cifraInput').focus();
+    $('cifraSelect').addEventListener('change', (e) => openCifra(Number(e.target.value)));
+    $('newBtn').addEventListener('click', newCifra);
+    $('deleteBtn').addEventListener('click', deleteCifra);
+    // Guarda o rascunho enquanto edita, para não perder ao trocar de cifra
+    $('cifraInput').addEventListener('input', () => {
+        cifra().text = $('cifraInput').value;
+        saveState();
+        renderCifraSelect();
     });
     $('cifraInput').addEventListener('paste', () => setTimeout(() => {
         const input = $('cifraInput');
@@ -233,11 +300,7 @@ function init() {
         saveState();
         renderStrip();
     });
-    $('editBtn').addEventListener('click', () => {
-        $('resultSection').hidden = true;
-        $('inputSection').hidden = false;
-        $('cifraInput').focus();
-    });
+    $('editBtn').addEventListener('click', () => showInput());
     $('transposeDown').addEventListener('click', () => transpose(-1));
     $('transposeUp').addEventListener('click', () => transpose(1));
     $('cifraView').addEventListener('click', (e) => {
@@ -245,7 +308,7 @@ function init() {
         if (btn) selectChord(btn.dataset.symbol);
     });
 
-    if (saved.text) showResult();
+    openCifra(saved.current, false);
 }
 
 init();

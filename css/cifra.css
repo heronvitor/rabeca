@@ -60,12 +60,25 @@
     gap: 10px;
 }
 
-.secondary-btn {
-    background: white;
-    color: #c0392b;
-    border: 1px solid #c0392b;
+.library-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 900px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+}
+
+.library-bar select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px;
     font-size: 1rem;
-    cursor: pointer;
+}
+
+.library-bar .icon-btn {
+    font-size: 1.2rem;
 }
 
 .primary-btn {
